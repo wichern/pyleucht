@@ -1,0 +1,147 @@
+from typing import List
+import time
+import spidev
+import pygame
+from pyleucht import Color
+
+class ScreenBase:
+    width: int
+    height: int
+    pixels: List[List[Color]]
+
+    def __init__(self, width: int, height: int):
+        self.width = width
+        self.height = height
+
+        # Initialize all pixels to black
+        self.pixels = [
+            [(0, 0, 0) for _ in range(self.width)]
+            for _ in range(self.height)
+        ]
+
+    def fill(self, color: Color):
+        for y in range(self.height):
+            for x in range(self.width):
+                self.pixels[y][x] = color
+
+    def update(self):
+        raise NotImplementedError("Subclasses must implement this method.")
+
+class ScreenWS2801(ScreenBase):
+    """ WS2801-based screen using raw SPI """
+
+    def __init__(self, width: int, height: int, bus: int = 0, device: int = 0, speed_hz: int = 1_000_000):
+        super().__init__(width, height)
+
+        print("Initializing WS2801 LED strip (SPI)...")
+
+        self.num_leds = width * height
+        self._spi = spidev.SpiDev()
+        self._spi.open(bus, device)
+        self._spi.max_speed_hz = speed_hz
+
+    def update(self):
+        """
+        Push the pixel buffer to the WS2801 strip.
+        WS2801 expects raw RGB bytes.
+        """
+        data = bytearray()
+
+        for y in range(self.height):
+            for x in range(self.width):
+                r, g, b = self.pixels[y][x]
+                data.extend((r & 0xFF, g & 0xFF, b & 0xFF))
+
+        self._spi.xfer2(list(data))
+        time.sleep(0.002)  # Latch delay
+
+    def close(self):
+        self._spi.close()
+
+
+
+class ScreenTest(ScreenBase):
+    ''' pygame based screen for testing with optional wakeword visual indicator '''
+
+    COLOR_BUTTON_OFF = (50, 50, 50)
+    COLOR_BUTTON_ON = (0, 255, 0)
+    BUTTON_HEIGHT = 30
+    BUTTON_WIDTH = 30
+    BUTTON_KEYS = [
+        pygame.K_1,
+        pygame.K_2,
+        pygame.K_3,
+        pygame.K_4,
+        pygame.K_5,
+        pygame.K_6,
+    ]
+
+    def __init__(self, width: int, height: int, pixel_size: int = 20, button_cbs: List[callable] = None):
+        super().__init__(width, height)
+        self._pixel_size = pixel_size
+        self._button_cbs = button_cbs
+        assert len(self._button_cbs) == 6, "Six button callbacks required"
+        self._button_states = [False] * 6  # six buttons
+    
+        # positions for the six buttons: left top/bottom, middle top/bottom, right top/bottom
+        self._button_positions = [
+            (0, height * self._pixel_size),
+            (0, height * self._pixel_size + self.BUTTON_HEIGHT),
+            (width * self._pixel_size // 2 - self.BUTTON_WIDTH // 2, height * self._pixel_size),
+            (width * self._pixel_size // 2 - self.BUTTON_WIDTH // 2, height * self._pixel_size + self.BUTTON_HEIGHT),
+            (width * self._pixel_size - self.BUTTON_WIDTH, height * self._pixel_size),
+            (width * self._pixel_size - self.BUTTON_WIDTH, height * self._pixel_size + self.BUTTON_HEIGHT),
+        ]
+
+        pygame.init()
+        self.surface = pygame.display.set_mode((self.width * self._pixel_size, self.height * self._pixel_size + 2 * self.BUTTON_HEIGHT))
+        pygame.display.set_caption('Emulated LED Wall')
+
+    def update(self):
+        for y in range(self.height):
+            for x in range(self.width):
+                color = self.pixels[y][x]
+                rect = pygame.Rect(x * self._pixel_size, y * self._pixel_size, self._pixel_size, self._pixel_size)
+                pygame.draw.rect(self.surface, color, rect)
+        
+        # Buttons can also be on or off based on their LED state
+        for i in range(6):
+            x, y = self._button_positions[i]
+            rect = pygame.Rect(x, y, self.BUTTON_WIDTH, self.BUTTON_HEIGHT)
+            color = self.COLOR_BUTTON_ON if self._button_states[i] else self.COLOR_BUTTON_OFF
+            pygame.draw.rect(self.surface, color, rect)
+
+        pygame.display.flip()
+
+        # Handle events: support window close, keyboard 1-6, and mouse clicks on simulated buttons
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key in self.BUTTON_KEYS:
+                    index = self.BUTTON_KEYS.index(event.key)
+                    self._button_states[index] = True
+                    self._button_cbs[index](True)
+            if event.type == pygame.KEYUP:
+                if event.key in self.BUTTON_KEYS:
+                    index = self.BUTTON_KEYS.index(event.key)
+                    self._button_states[index] = False
+                    self._button_cbs[index](False)
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mx, my = event.pos
+                for i in range(6):
+                    x, y = self._button_positions[i]
+                    rect = pygame.Rect(x, y, self.BUTTON_WIDTH, self.BUTTON_HEIGHT)
+                    if rect.collidepoint(mx, my):
+                        self._button_states[i] = True
+                        self._button_cbs[i](True)
+            if event.type == pygame.MOUSEBUTTONUP:
+                mx, my = event.pos
+                for i in range(6):
+                    x, y = self._button_positions[i]
+                    rect = pygame.Rect(x, y, self.BUTTON_WIDTH, self.BUTTON_HEIGHT)
+                    if rect.collidepoint(mx, my):
+                        self._button_states[i] = False
+                        self._button_cbs[i](False)
