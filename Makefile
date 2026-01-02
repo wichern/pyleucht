@@ -20,12 +20,17 @@ $(VENV)/.installed: $(VENV) pyproject.toml
 	$(PIP) install .
 	@touch $(VENV)/.installed
 
+$(VENV)/.installed_debug: $(VENV)/.installed pyproject.toml
+	$(PIP) install --upgrade pip
+	$(PIP) install ".[debug]"
+	@touch $(VENV)/.installed_debug
+
 .PHONY: run
 run: $(VENV)/.installed
 	PYTHONPATH=src $(PYTHON) -m pyleucht
 
 .PHONY: run_sim
-run_sim: $(VENV)/.installed
+run_sim: $(VENV)/.installed_debug
 	PYTHONPATH=src $(PYTHON) -m pyleucht --debug
 
 .PHONY: clean

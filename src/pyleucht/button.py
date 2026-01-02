@@ -1,9 +1,3 @@
-try:
-    import RPi.GPIO as GPIO
-    HAS_GPIO = True
-except RuntimeError:
-    HAS_GPIO = False
-
 BUTTON_TOP_LEFT = 0
 BUTTON_BOTTOM_LEFT = 1
 BUTTON_TOP_MIDDLE = 2
@@ -41,8 +35,12 @@ class GPIOHandler(HandlerBase):
     def __init__(self, gpio_push: list[int], gpio_led: list[int]):
         super().__init__()
 
+        try:
+            import RPi.GPIO as GPIO
+        except ImportError as e:
+            raise RuntimeError("RPi.GPIO module is required for GPIO button handling") from e
+
         assert len(gpio_push) == 6 and len(gpio_led) == 6, "Expected 6 GPIO pins for buttons and LEDs"
-        assert HAS_GPIO, "RPi.GPIO module is required for GPIO button handling"
         GPIO.setmode(GPIO.BCM)
 
         # Setup buttons and LEDs
