@@ -49,8 +49,8 @@ class GPIOHandler(HandlerBase):
             GPIO.setup(gpio_led[i], GPIO.OUT)
             GPIO.output(gpio_led[i], GPIO.LOW)
             
-            GPIO.add_event_detect(gpio_push[i], GPIO.FALLING, callback=lambda channel, index=i: self.callback(index, True), bouncetime=ButtonHandlerGPIO.BOUNCE_TIME_MS)
-            GPIO.add_event_detect(gpio_push[i], GPIO.RISING, callback=lambda channel, index=i: self.callback(index, False), bouncetime=ButtonHandlerGPIO.BOUNCE_TIME_MS)
+            GPIO.add_event_detect(gpio_push[i], GPIO.FALLING, callback=lambda channel, index=i: self.callback(index, True), bouncetime=GPIOHandler.BOUNCE_TIME_MS)
+            GPIO.add_event_detect(gpio_push[i], GPIO.RISING, callback=lambda channel, index=i: self.callback(index, False), bouncetime=GPIOHandler.BOUNCE_TIME_MS)
 
 class DebugHandler(HandlerBase):
     '''
