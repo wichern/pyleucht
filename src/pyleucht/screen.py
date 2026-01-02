@@ -46,10 +46,18 @@ class WS2801(Base):
         """
         data = bytearray()
 
+        # Extend data and consider that the strip is wired in serpentine order
         for y in range(self.height):
-            for x in range(self.width):
-                r, g, b = self.pixels[y][x]
-                data.extend((r & 0xFF, g & 0xFF, b & 0xFF))
+            if y % 2 == 0:
+                # even row: left to right
+                for x in range(self.width):
+                    r, g, b = self.pixels[y][x]
+                    data.extend((r & 0xFF, g & 0xFF, b & 0xFF))
+            else:
+                # odd row: right to left
+                for x in reversed(range(self.width)):
+                    r, g, b = self.pixels[y][x]
+                    data.extend((r & 0xFF, g & 0xFF, b & 0xFF))
 
         self._spi.xfer2(list(data))
         time.sleep(0.002)  # Latch delay

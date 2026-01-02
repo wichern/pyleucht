@@ -33,6 +33,7 @@ class Base:
 class Idle(Base):
     def __init__(self, buttons: type[pl.button.HandlerBase]):
         super().__init__(buttons)
+        self.animations.append(pl.animation.Kaleidoscope(speed=-100.0))
 
     def on_button_pressed(self, event: pl.event.ButtonPressed):
         # if any button is pressed we want to switch to main menu state

@@ -8,18 +8,14 @@ ifeq ($(OS),Windows_NT)
 	PIP := $(VENV)/Scripts/pip.exe
 endif
 
-.PHONY: linux_prepare
-linux_prepare:
-	sudo apt-get install -y libportaudio2
+# .PHONY: linux_prepare
+# linux_prepare:
+# 	sudo apt-get install -y libportaudio2
 
 $(VENV):
 	python -m venv $(VENV)
 
 $(VENV)/.installed: $(VENV) pyproject.toml
-	@if ! dpkg -s libportaudio2 >/dev/null 2>&1; then \
-		echo "libportaudio2 is not installed. Please run 'make linux_prepare'."; \
-		exit 1; \
-	fi
 	$(PIP) install --upgrade pip
 	$(PIP) install .
 	@touch $(VENV)/.installed

@@ -6,7 +6,11 @@ authors = [
 ]
 
 dependencies = [
-    "pygame~=2.6.0",
     "spidev~=3.8",
     "RPi.GPIO~=0.7.1",
+]
+
+[project.optional-dependencies]
+debug = [
+    "pygame~=2.6.0",
 ]
