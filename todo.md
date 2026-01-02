@@ -1,8 +1,8 @@
 # MVP
 
 [x] Show an animation via debug Screen
-[x] Show an animation via adafruit
-[ ] Screen uses double buffer and blending
+[x] Show an animation via SPI
+[ ] Show a main menu to select an app
 
 # Classes
 
@@ -59,10 +59,7 @@
 # Features
 
 * Show animation when idle
-* Interaction with ChatGPT
 * Tabletennis score
-* Music player
-* Snake Game
 * Pong Game
 * PV State
 * Weather forecast

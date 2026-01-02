@@ -1,13 +1,12 @@
-from typing import List
 import time
 import spidev
 import pygame
-from pyleucht import Color
+import pyleucht as pl
 
-class ScreenBase:
+class Base:
     width: int
     height: int
-    pixels: List[List[Color]]
+    pixels: list[pl.Color]
 
     def __init__(self, width: int, height: int):
         self.width = width
@@ -19,7 +18,7 @@ class ScreenBase:
             for _ in range(self.height)
         ]
 
-    def fill(self, color: Color):
+    def fill(self, color: pl.Color):
         for y in range(self.height):
             for x in range(self.width):
                 self.pixels[y][x] = color
@@ -27,7 +26,7 @@ class ScreenBase:
     def update(self):
         raise NotImplementedError("Subclasses must implement this method.")
 
-class ScreenWS2801(ScreenBase):
+class WS2801(Base):
     """ WS2801-based screen using raw SPI """
 
     def __init__(self, width: int, height: int, bus: int = 0, device: int = 0, speed_hz: int = 1_000_000):
@@ -59,8 +58,7 @@ class ScreenWS2801(ScreenBase):
         self._spi.close()
 
 
-
-class ScreenTest(ScreenBase):
+class Debug(Base):
     ''' pygame based screen for testing with optional wakeword visual indicator '''
 
     COLOR_BUTTON_OFF = (50, 50, 50)
@@ -76,12 +74,10 @@ class ScreenTest(ScreenBase):
         pygame.K_6,
     ]
 
-    def __init__(self, width: int, height: int, pixel_size: int = 20, button_cbs: List[callable] = None):
+    def __init__(self, width: int, height: int, buttons: pl.button.DebugHandler, pixel_size: int = 20):
         super().__init__(width, height)
         self._pixel_size = pixel_size
-        self._button_cbs = button_cbs
-        assert len(self._button_cbs) == 6, "Six button callbacks required"
-        self._button_states = [False] * 6  # six buttons
+        self._buttons = buttons
     
         # positions for the six buttons: left top/bottom, middle top/bottom, right top/bottom
         self._button_positions = [
@@ -108,7 +104,7 @@ class ScreenTest(ScreenBase):
         for i in range(6):
             x, y = self._button_positions[i]
             rect = pygame.Rect(x, y, self.BUTTON_WIDTH, self.BUTTON_HEIGHT)
-            color = self.COLOR_BUTTON_ON if self._button_states[i] else self.COLOR_BUTTON_OFF
+            color = self.COLOR_BUTTON_ON if self._buttons.get_led_state(i) else self.COLOR_BUTTON_OFF
             pygame.draw.rect(self.surface, color, rect)
 
         pygame.display.flip()
@@ -121,13 +117,11 @@ class ScreenTest(ScreenBase):
             if event.type == pygame.KEYDOWN:
                 if event.key in self.BUTTON_KEYS:
                     index = self.BUTTON_KEYS.index(event.key)
-                    self._button_states[index] = True
-                    self._button_cbs[index](True)
+                    self._buttons.callback(index, True)
             if event.type == pygame.KEYUP:
                 if event.key in self.BUTTON_KEYS:
                     index = self.BUTTON_KEYS.index(event.key)
-                    self._button_states[index] = False
-                    self._button_cbs[index](False)
+                    self._buttons.callback(index, False)
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mx, my = event.pos
@@ -135,13 +129,11 @@ class ScreenTest(ScreenBase):
                     x, y = self._button_positions[i]
                     rect = pygame.Rect(x, y, self.BUTTON_WIDTH, self.BUTTON_HEIGHT)
                     if rect.collidepoint(mx, my):
-                        self._button_states[i] = True
-                        self._button_cbs[i](True)
+                        self._buttons.callback(i, True)
             if event.type == pygame.MOUSEBUTTONUP:
                 mx, my = event.pos
                 for i in range(6):
                     x, y = self._button_positions[i]
                     rect = pygame.Rect(x, y, self.BUTTON_WIDTH, self.BUTTON_HEIGHT)
                     if rect.collidepoint(mx, my):
-                        self._button_states[i] = False
-                        self._button_cbs[i](False)
+                        self._buttons.callback(i, False)
