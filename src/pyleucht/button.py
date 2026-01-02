@@ -42,6 +42,7 @@ class GPIOHandler(HandlerBase):
 
         assert len(gpio_push) == 6 and len(gpio_led) == 6, "Expected 6 GPIO pins for buttons and LEDs"
         GPIO.setmode(GPIO.BCM)
+        GPIO.setwarnings(False)
 
         # Setup buttons and LEDs
         for i in range(6):
@@ -49,18 +50,49 @@ class GPIOHandler(HandlerBase):
             GPIO.setup(gpio_led[i], GPIO.OUT)
             GPIO.output(gpio_led[i], GPIO.LOW)
             
-            #GPIO.add_event_detect(gpio_push[i], GPIO.FALLING, callback=lambda channel, index=i: self.callback(index, True), bouncetime=GPIOHandler.BOUNCE_TIME_MS)
-            #GPIO.add_event_detect(gpio_push[i], GPIO.RISING, callback=lambda channel, index=i: self.callback(index, False), bouncetime=GPIOHandler.BOUNCE_TIME_MS)
-            GPIO.add_event_detect(
-                gpio_push[i],
-                GPIO.BOTH,
-                callback=lambda channel, index=i: self.callback(index, not GPIO.input(channel)),
-                bouncetime=GPIOHandler.BOUNCE_TIME_MS
-            )
+            # Try to use hardware edge detection; on failure, fall back to polling.
+            def _make_cb(index):
+                def _cb(channel):
+                    pressed = GPIO.input(channel) == GPIO.LOW
+                    self.callback(index, pressed)
+                return _cb
+
+            try:
+                GPIO.add_event_detect(
+                    gpio_push[i],
+                    GPIO.BOTH,
+                    callback=_make_cb(i),
+                    bouncetime=GPIOHandler.BOUNCE_TIME_MS
+                )
+            except RuntimeError:
+                # Fall back to polling if edge detection cannot be added.
+                if not hasattr(self, '_polling_needed'):
+                    self._polling_needed = True
+                    self._last_states = {}
+                self._last_states[gpio_push[i]] = GPIO.input(gpio_push[i])
 
 class DebugHandler(HandlerBase):
     '''
-    Simulates buttons and LEDs for debugging without physical hardware.
+        # If any add_event_detect failed above, start a single polling thread.
+        if getattr(self, '_polling_needed', False):
+            import threading, time
+
+            def _poll():
+                while True:
+                    for idx, pin in enumerate(gpio_push):
+                        try:
+                            state = GPIO.input(pin)
+                        except Exception:
+                            continue
+                        last = self._last_states.get(pin, state)
+                        if state != last:
+                            pressed = state == GPIO.LOW
+                            self.callback(idx, pressed)
+                            self._last_states[pin] = state
+                    time.sleep(0.02)
+
+            self._polling_thread = threading.Thread(target=_poll, daemon=True)
+            self._polling_thread.start()
     '''
 
     def __init__(self):
