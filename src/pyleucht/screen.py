@@ -4,7 +4,7 @@ import pyleucht as pl
 class Base:
     width: int
     height: int
-    pixels: list[pl.Color]
+    pixels: list[pl.RGB]
 
     def __init__(self, width: int, height: int):
         self.width = width
@@ -16,13 +16,26 @@ class Base:
             for _ in range(self.height)
         ]
 
-    def fill(self, color: pl.Color):
+    def fill(self, color: pl.RGB):
         for y in range(self.height):
             for x in range(self.width):
                 self.pixels[y][x] = color
 
+    def set(self, pos: pl.Point, color: pl.RGB):
+        if pos.y < 0 or pos.y >= self.height:
+            return
+        if pos.x < 0 or pos.x >= self.width:
+            return
+        self.pixels[pos.y][pos.x] = color
+
     def update(self):
         raise NotImplementedError("Subclasses must implement this method.")
+
+    def points(self):
+        """Generator that yields all points on the screen."""
+        for y in range(self.height):
+            for x in range(self.width):
+                yield pl.Point(x, y)
 
 class WS2801(Base):
     """ WS2801-based screen using raw SPI """
@@ -117,7 +130,7 @@ class Debug(Base):
             for x in range(self.width):
                 color = self.pixels[y][x]
                 rect = self._pygame.Rect(x * self._pixel_size, y * self._pixel_size, self._pixel_size, self._pixel_size)
-                self._pygame.draw.rect(self.surface, color, rect)
+                self._pygame.draw.rect(self.surface, color.to_tuple(), rect)
         
         # Buttons can also be on or off based on their LED state
         for i in range(6):

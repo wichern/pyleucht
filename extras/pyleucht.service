@@ -1,0 +1,19 @@
+# Systemd unit for the Pyleucht LED server
+# Adjust `User=` and `WorkingDirectory=` as appropriate for your installation.
+[Unit]
+Description=Pyleucht LED server
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/env python3 -m pyleucht
+Restart=on-failure
+RestartSec=5s
+Environment=PYTHONUNBUFFERED=1
+StandardOutput=journal
+StandardError=journal
+User=paul
+WorkingDirectory=/home/paul/repos/pyleucht
+
+[Install]
+WantedBy=multi-user.target

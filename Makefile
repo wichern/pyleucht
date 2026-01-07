@@ -36,3 +36,10 @@ run_sim: $(VENV)/.installed_debug
 .PHONY: clean
 clean:
 	rm -rf $(VENV)
+
+.PHONY: deploy_systemd
+deploy_systemd:
+	sudo cp deploy/pyleucht.service /etc/systemd/system/pyleucht.service
+	sudo systemctl daemon-reload
+	sudo systemctl enable pyleucht.service
+	sudo systemctl start pyleucht.service

@@ -54,6 +54,10 @@ class ProgramSelection(Base):
     def __init__(self, buttons: type[pl.button.HandlerBase]):
         super().__init__(buttons)
 
+        self.animations.append(pl.animation.BreathingGlow(color=pl.RGB(0, 0, 255), speed=1.0))
+        self.animations.append(pl.animation.Text(text="yz{|}", pos=pl.Point(0, 0), color=pl.RGB(255, 255, 255)))
+        self.animations.append(pl.animation.Text(text="~", pos=pl.Point(0, 6), color=pl.RGB(255, 255, 255)))
+
         # Initialize button states for program selection
         self.buttons.set_led_state(self.BUTTON_UP, True)
         self.buttons.set_led_state(self.BUTTON_DOWN, True)

@@ -1,3 +1,5 @@
+import logging
+
 BUTTON_TOP_LEFT = 0
 BUTTON_BOTTOM_LEFT = 1
 BUTTON_TOP_MIDDLE = 2
@@ -37,63 +39,52 @@ class GPIOHandler(HandlerBase):
 
         try:
             import RPi.GPIO as GPIO
-        except ImportError as e:
-            raise RuntimeError("RPi.GPIO module is required for GPIO button handling") from e
+            self._GPIO = GPIO
+        except Exception as e:
+            logging.warning("RPi.GPIO not available or unusable: %s", e)
+            return
 
+        self._gpio_available = True
         assert len(gpio_push) == 6 and len(gpio_led) == 6, "Expected 6 GPIO pins for buttons and LEDs"
+        self._gpio_push = list(gpio_push)
+        self._gpio_led = list(gpio_led)
+
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
 
         # Setup buttons and LEDs
         for i in range(6):
-            GPIO.setup(gpio_push[i], GPIO.IN, pull_up_down=GPIO.PUD_UP)
-            GPIO.setup(gpio_led[i], GPIO.OUT)
-            GPIO.output(gpio_led[i], GPIO.LOW)
-            
-            # Try to use hardware edge detection; on failure, fall back to polling.
-            def _make_cb(index):
-                def _cb(channel):
-                    pressed = GPIO.input(channel) == GPIO.LOW
-                    self.callback(index, pressed)
-                return _cb
+            GPIO.setup(self._gpio_push[i], GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            GPIO.setup(self._gpio_led[i], GPIO.OUT)
+            GPIO.output(self._gpio_led[i], GPIO.LOW)
 
-            try:
-                GPIO.add_event_detect(
-                    gpio_push[i],
-                    GPIO.BOTH,
-                    callback=_make_cb(i),
-                    bouncetime=GPIOHandler.BOUNCE_TIME_MS
-                )
-            except RuntimeError:
-                # Fall back to polling if edge detection cannot be added.
-                if not hasattr(self, '_polling_needed'):
-                    self._polling_needed = True
-                    self._last_states = {}
-                self._last_states[gpio_push[i]] = GPIO.input(gpio_push[i])
+            GPIO.add_event_detect(
+                self._gpio_push[i],
+                GPIO.RISING,
+                callback=self._button_up_callback,
+                bouncetime=self.BOUNCE_TIME_MS,
+            )
+
+            GPIO.add_event_detect(
+                self._gpio_push[i],
+                GPIO.FALLING,
+                callback=self._button_down_callback,
+                bouncetime=self.BOUNCE_TIME_MS,
+            )
+
+    def _button_up_callback(self, channel):
+        button_id = self._gpio_push.index(channel)
+        self.callback(button_id, pressed=False)
+    
+    def _button_down_callback(self, channel):
+        button_id = self._gpio_push.index(channel)
+        self.callback(button_id, pressed=True)
 
 class DebugHandler(HandlerBase):
-    '''
-        # If any add_event_detect failed above, start a single polling thread.
-        if getattr(self, '_polling_needed', False):
-            import threading, time
-
-            def _poll():
-                while True:
-                    for idx, pin in enumerate(gpio_push):
-                        try:
-                            state = GPIO.input(pin)
-                        except Exception:
-                            continue
-                        last = self._last_states.get(pin, state)
-                        if state != last:
-                            pressed = state == GPIO.LOW
-                            self.callback(idx, pressed)
-                            self._last_states[pin] = state
-                    time.sleep(0.02)
-
-            self._polling_thread = threading.Thread(target=_poll, daemon=True)
-            self._polling_thread.start()
-    '''
+    """
+    Simple debug/no-op handler used when GPIO is not available.
+    Keeps internal LED/button state and exposes the same API as GPIOHandler.
+    """
 
     def __init__(self):
         super().__init__()
