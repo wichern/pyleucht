@@ -1,9 +1,3 @@
-# MVP
-
-[x] Show an animation via debug Screen
-[x] Show an animation via SPI
-[ ] Show a main menu to select an app
-
 # Classes
 
 * Marquee (rolling text)
@@ -62,22 +56,3 @@
 * Tabletennis score
 * Pong Game
 * PV State
-* Weather forecast
-
-# Buttons
-
-* UpperLeft
-* LowerLeft
-* UpperMiddle
-* LowerMiddle
-* UpperRight
-* LowerRight
-
-# StateMachine
-
-1. Idle
-   Screen is black
-   Right Buttons: Trigger Program Selection Mode
-   LowerMiddle: Trigger Talk Mode
-2. ProgramSelection
-3. Talk
