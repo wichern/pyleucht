@@ -11,4 +11,3 @@ class ButtonPressed(Event):
 @dataclass
 class ButtonReleased(Event):
     button_id: int
-

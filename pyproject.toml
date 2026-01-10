@@ -5,12 +5,13 @@ authors = [
     { name = "Paul Wichern" }
 ]
 
-dependencies = [
-    "spidev~=3.8",
-    "RPi.GPIO~=0.7.1",
-]
+dependencies = []
 
 [project.optional-dependencies]
 debug = [
     "pygame~=2.6.0",
+]
+rpi = [
+    "spidev~=3.8",
+    "RPi.GPIO~=0.7.1",
 ]

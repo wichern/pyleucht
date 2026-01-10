@@ -27,6 +27,27 @@ class Base:
         '''
         raise NotImplementedError("Subclasses must implement this method.")
 
+
+class FillColor(Base):
+    def __init__(self, color: pl.RGB):
+        super().__init__()
+        self.color = color
+
+    def update(self, screen: type[pl.screen.Base], dt: float):
+        screen.fill(self.color)
+
+
+class VLine(Base):
+    def __init__(self, color: pl.RGB, x: int):
+        super().__init__()
+        self.color = color
+        self.x = x
+
+    def update(self, screen: type[pl.screen.Base], dt: float):
+        for y in range(screen.height):
+            screen.set(pl.Point(self.x, y), self.color)
+
+
 class RainbowCycle(Base):
     def __init__(self, speed: float = 1.0):
         super().__init__()
@@ -38,6 +59,7 @@ class RainbowCycle(Base):
         for point in screen.points():
             hue = (self.position + (point.x + point.y) * 10) % 360
             screen.set(point, pl.RGB.from_hue(hue))
+
 
 class Kaleidoscope(Base):
     def __init__(self, speed: float = 1.0):
@@ -56,6 +78,7 @@ class Kaleidoscope(Base):
             hue = (self.angle + distance * 10) % 360
             screen.set(point, pl.RGB.from_hue(hue))
 
+
 class BreathingGlow(Base):
     def __init__(self, color: pl.RGB = pl.RGB(0, 0, 255), speed: float = 1.0):
         super().__init__()
@@ -71,8 +94,16 @@ class BreathingGlow(Base):
         b = int(self.color.b * brightness)
         screen.fill(pl.RGB(r, g, b))
 
+
 class Text(Base):
     def __init__(self, text: str, pos: pl.Point, *, initial_wait: float = 0.0, speed: float = 0.0, color: pl.RGB = (255, 255, 255)):
+        '''        
+        :param text: Text
+        :param pos: Top-Left position
+        :param initial_wait: seconds to wait before starting to move
+        :param speed: pixels in seconds
+        :param color: Text color
+        '''
         super().__init__()
         self.text = text
         self.pos = pos
@@ -80,6 +111,7 @@ class Text(Base):
         self.speed = speed
         self.color = color
         self.offset = 0.0
+        self.text_width = pl.font.text_width(self.text)
 
     def update(self, screen: type[pl.screen.Base], dt: float):
         if self.initial_wait > 0:
@@ -91,7 +123,12 @@ class Text(Base):
             self.offset += self.speed * dt
 
         # Draw visible characters
-        draw_x = self.pos.x
+        draw_x = self.pos.x - int(self.offset)
+
+        # if draw_x is less than -|text-width|, reset to screen.w
+        if draw_x < -self.text_width:
+            self.offset -= float(self.text_width) + screen.width
+
         for ch in self.text:
             if draw_x >= screen.width:
                 break

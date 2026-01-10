@@ -885,3 +885,8 @@ def get_char(ch: str) -> Char:
     if 0x21 <= code <= 0x7E:
         return simple_ascii_table[code - 0x21]
     return INVALID_CHAR
+
+def text_width(str: str) -> int:
+    character_width = sum(simple_ascii_table[ord(ch) - 0x21].width for ch in str)
+    spacing_width = len(str) - 1
+    return character_width + spacing_width
