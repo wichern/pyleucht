@@ -13,8 +13,6 @@ def main():
     parser.add_argument("--fps", type=int, default=30, help="Frame rate in frames per second (default: 30)")
     args = parser.parse_args()
 
-    ui = None
-    buttons = None
     if args.debug:
         buttons = pl.button.DebugHandler()
         ui = pl.screen.Debug(SCREEN_WIDTH, SCREEN_HEIGHT, buttons=buttons)

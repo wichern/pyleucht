@@ -14,8 +14,10 @@ class UserAction:
     SELECT = 2
     WAKEUP = 3
 
+
 class Base:
-    def __init__(self, buttons: type[pl.button.HandlerBase]):
+    def __init__(self, screen: type[pl.screen.Base], buttons: type[pl.button.HandlerBase]):
+        self.screen = screen
         self.buttons = buttons
         self.animations = []
 
@@ -28,10 +30,10 @@ class Base:
     def on_frame(self):
         pass
 
-    def update(self, screen, dt):
+    def update(self, dt):
         self.on_frame()
         for animation in self.animations:
-            animation.update(screen, dt)
+            animation.update(self.screen, dt)
 
     def handle_event(self, event: type[pl.event.Event]):
         if isinstance(event, pl.event.ButtonPressed):
@@ -49,8 +51,8 @@ class Base:
 class Idle(Base):
     MAX_IDLE_FRAMES = 100
 
-    def __init__(self, buttons: type[pl.button.HandlerBase]):
-        super().__init__(buttons)
+    def __init__(self, screen: type[pl.screen.Base], buttons: type[pl.button.HandlerBase]):
+        super().__init__(screen, buttons)
 
     def on_enter(self):
         super().on_enter()
@@ -69,6 +71,8 @@ class Idle(Base):
 
 
 class TableTennis(Base):
+    ''' A score board for table tennis matches '''
+
     BUTTON_PLAYER0_UP = pl.button.BUTTON_TOP_LEFT
     BUTTON_PLAYER0_DOWN = pl.button.BUTTON_BOTTOM_LEFT
     BUTTON_PLAYER1_UP = pl.button.BUTTON_TOP_RIGHT
@@ -79,84 +83,106 @@ class TableTennis(Base):
     COLOR_AHEAD = pl.RGB(0, 255, 0)
     COLOR_BEHIND = pl.RGB(255, 0, 0)
 
-    BASE_POS_X_0_1DIGIT = 6
-    BASE_POS_X_0_2DIGIT = 2
-    BASE_POS_X_1_1DIGIT = 17
-    BASE_POS_X_1_2DIGIT = 13
+    LABEL_OFFSET_Y = 3
 
-    ''' Table tennis score board '''
-    def __init__(self, buttons: type[pl.button.HandlerBase]):
-        super().__init__(buttons)
-        self.background = pl.animation.FillColor(pl.RGB(0, 0, 0))
-        self.label0 = pl.animation.Text(text='0', pos=pl.Point(self.BASE_POS_X_0_1DIGIT, 3), color=self.COLOR_TIE)
-        self.label1 = pl.animation.Text(text='0', pos=pl.Point(self.BASE_POS_X_1_1DIGIT, 3), color=self.COLOR_TIE)
+    def __init__(self, screen: type[pl.screen.Base], buttons: type[pl.button.HandlerBase]):
+        super().__init__(screen, buttons)
+
+        self.scores = [0, 0]
+
+        self.bboxes = [
+            pl.BBox(pl.Point(0, 0), pl.Point(screen.width // 2, screen.height)),
+            pl.BBox(pl.Point(screen.width // 2 + 1, 0), pl.Point(screen.width, screen.height))
+        ]
+
+        self.backgrounds_default = [
+            pl.animation.FillColor(pl.RGB(12, 12, 12), bbox=self.bboxes[0]),
+            pl.animation.FillColor(pl.RGB(55, 55, 55), bbox=self.bboxes[1])
+        ]
+        self.backgrounds_won = [
+            pl.animation.Kaleidoscope(100.0, bbox=self.bboxes[0]),
+            pl.animation.Kaleidoscope(100.0, bbox=self.bboxes[1])
+        ]
+        self.backgrounds = self.backgrounds_default
+        self.labels= []
+        for player in range(2):
+            self.labels.append(pl.animation.Text(text=str(self.scores[player]), pos=pl.Point(self._label_offset_x(str(self.scores[player]), player), self.LABEL_OFFSET_Y), color=self.COLOR_TIE))
 
     def on_enter(self):
         super().on_enter()
         self.buttons.set_led_state(self.BUTTON_PLAYER0_UP, True)
         self.buttons.set_led_state(self.BUTTON_PLAYER1_UP, True)
         self.buttons.set_led_state(self.BUTTON_BACK, True)
-        self.score0 = 0
-        self.score1 = 0
+        for player in range(2):
+            self.scores[player] = 0
         self.game_over = False
-        self.animations.append(self.background)
-        self.animations.append(pl.animation.VLine(pl.RGB(127, 127, 127), 10))
-        self.animations.append(self.label0)
-        self.animations.append(self.label1)
-        self._update_score(self.label0, self.score0, self.score1, self.BASE_POS_X_0_1DIGIT, self.BASE_POS_X_0_2DIGIT)
-        self._update_score(self.label1, self.score1, self.score0, self.BASE_POS_X_1_1DIGIT, self.BASE_POS_X_1_2DIGIT)
+        self.animations.extend(self.backgrounds)
+        self.animations.append(pl.animation.VLine(pl.RGB(127, 127, 127), self.screen.width // 2))
+        self.animations.extend(self.labels)
+        self._update_scores()
 
     def on_button_pressed(self, event: pl.event.ButtonPressed):
         if event.button_id == self.BUTTON_PLAYER0_UP and not self.game_over:
-            self.score0 += 1
+            self.scores[0] += 1
         if event.button_id == self.BUTTON_PLAYER0_DOWN and not self.game_over:
-            self.score0 = max(0, self.score0 - 1)
+            self.scores[0] = max(0, self.scores[0] - 1)
         if event.button_id == self.BUTTON_PLAYER1_UP and not self.game_over:
-            self.score1 += 1
+            self.scores[1] += 1
         if event.button_id == self.BUTTON_PLAYER1_DOWN and not self.game_over:
-            self.score1 = max(0, self.score1 - 1)
+            self.scores[1] = max(0, self.scores[1] - 1)
 
         if event.button_id == self.BUTTON_BACK:
-            if self.score0 == 0 and self.score1 == 0:
+            if self.scores[0] == 0 and self.scores[1] == 0:
                 return (UserAction.BACK, None)
-            self.score0 = 0
-            self.score1 = 0
+            for player in range(2):
+                self.scores[player] = 0
+                self.animations[player] = self.backgrounds_default[player]
             self.game_over = False
 
-        self._update_score(self.label0, self.score0, self.score1, self.BASE_POS_X_0_1DIGIT, self.BASE_POS_X_0_2DIGIT)
-        self._update_score(self.label1, self.score1, self.score0, self.BASE_POS_X_1_1DIGIT, self.BASE_POS_X_1_2DIGIT)
+        self._update_scores()
 
-        self.buttons.set_led_state(self.BUTTON_PLAYER0_DOWN, self.score0 > 0 and not self.game_over)
-        self.buttons.set_led_state(self.BUTTON_PLAYER1_DOWN, self.score1 > 0 and not self.game_over)
+        self.buttons.set_led_state(self.BUTTON_PLAYER0_DOWN, self.scores[0] > 0 and not self.game_over)
+        self.buttons.set_led_state(self.BUTTON_PLAYER1_DOWN, self.scores[1] > 0 and not self.game_over)
         self.buttons.set_led_state(self.BUTTON_PLAYER0_UP, not self.game_over)
         self.buttons.set_led_state(self.BUTTON_PLAYER1_UP, not self.game_over)
 
         return (UserAction.NONE, None)
 
-    def _update_score(self, label, score, opponent_score, base_pos_1d, base_pos_2d):
-        if score == opponent_score:
-            label.color = self.COLOR_TIE
-        elif score < opponent_score:
-            label.color = self.COLOR_BEHIND
-        else:
-            label.color = self.COLOR_AHEAD
-        
-        label.text = str(score)
+    def _update_scores(self):
+        for player in range(2):
+            score = self.scores[player]
+            opponent_score = self.scores[(player + 1) % 2]
 
-        if score < 10:
-            label.pos.x = base_pos_1d
-        else:
-            label.pos.x = base_pos_2d
+            if score == opponent_score:
+                self.labels[player].color = self.COLOR_TIE
+            elif score < opponent_score:
+                self.labels[player].color = self.COLOR_BEHIND
+            else:
+                self.labels[player].color = self.COLOR_AHEAD
+            
+            self.labels[player].text = str(score)
+            self.labels[player].pos.x = self._label_offset_x(self.labels[player].text, player)
+            if not self.game_over:
+                if score >= 11 and (score - opponent_score) >= 2:
+                    self.game_over = True
+                    self.animations[player] = self.backgrounds_won[player]
 
-        self.game_over = score >= 11 and (score - opponent_score) >= 2
+    def _label_offset_x(self, text: str, player: int):
+        if player == 0:
+            base = self.screen.width // 2
+        else:
+            base = self.screen.width
+
+        return base - len(text) * (pl.font.get_char('0').width + 1)
+
 
 class Animations(Base):
     BUTTON_UP = pl.button.BUTTON_TOP_RIGHT
     BUTTON_DOWN = pl.button.BUTTON_BOTTOM_RIGHT
     BUTTON_BACK = pl.button.BUTTON_BOTTOM_MIDDLE
 
-    def __init__(self, buttons: type[pl.button.HandlerBase]):
-        super().__init__(buttons)
+    def __init__(self, screen: type[pl.screen.Base], buttons: type[pl.button.HandlerBase]):
+        super().__init__(screen, buttons)
 
     def on_enter(self):
         super().on_enter()
@@ -171,8 +197,8 @@ class ProgramSelection(Base):
     BUTTON_SELECT = pl.button.BUTTON_TOP_MIDDLE
     BUTTON_BACK = pl.button.BUTTON_BOTTOM_MIDDLE
 
-    def __init__(self, buttons: type[pl.button.HandlerBase], app_names: list[str]):
-        super().__init__(buttons)
+    def __init__(self, screen: type[pl.screen.Base], buttons: type[pl.button.HandlerBase], app_names: list[str]):
+        super().__init__(screen, buttons)
         self.selected = 0
         self.app_names = app_names
 

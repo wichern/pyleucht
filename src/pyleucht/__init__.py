@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from collections.abc import Generator
 
 @dataclass
 class RGB:
@@ -13,10 +14,6 @@ class RGB:
             g=max(0, min(255, self.g)),
             b=max(0, min(255, self.b)),
         )
-
-    def to_rgba(self, a: int = 255) -> "RGBA":
-        """Convert RGB to RGBA by adding an alpha value."""
-        return RGBA(self.r, self.g, self.b, a)
 
     def to_tuple(self) -> tuple[int, int, int]:
         return (self.r, self.g, self.b)
@@ -49,29 +46,9 @@ class RGB:
         return RGB(r, g, b)
 
 @dataclass
-class RGBA:
-    r: int
-    g: int
-    b: int
-    a: int
-
-    def clamp(self) -> "RGBA":
-        """Return a new RGBA with each component clamped to 0–255."""
-        return RGBA(
-            r=max(0, min(255, self.r)),
-            g=max(0, min(255, self.g)),
-            b=max(0, min(255, self.b)),
-            a=max(0, min(255, self.a)),
-        )
-
-@dataclass
 class Point:
     x: int
     y: int
-
-    def move(self, dx: int, dy: int) -> "Point":
-        """Return a new point shifted by (dx, dy)."""
-        return Point(self.x + dx, self.y + dy)
 
     def __add__(self, other: "Point") -> "Point":
         return Point(self.x + other.x, self.y + other.y)
@@ -80,11 +57,32 @@ class Point:
         return Point(self.x - other.x, self.y - other.y)
 
     @staticmethod
-    def points(w: int, h: int):
+    def points(w: int, h: int) -> Generator["Point", None, None]:
         for y in range(h):
             for x in range(w):
                 yield Point(x, y)
 
+class BBox:
+    def __init__(self, min: Point, max: Point):
+        self.min = min
+        self.max = max
+
+    def points(self) -> Generator[Point, None, None]:
+        for y in range(self.min.y, self.max.y):
+            for x in range(self.min.x, self.max.x):
+                yield Point(x, y)
+
+    def center(self) -> Point:
+        return Point(
+            self.min.x + ((self.max.x - self.min.x) // 2),
+            self.min.y + ((self.max.y - self.min.y) // 2)
+        )
+    
+    def center_f(self) -> tuple[float]:
+        return (
+            float(self.min.x) + (float(self.max.x - self.min.x) / 2.0),
+            float(self.min.y) + (float(self.max.y - self.min.y) / 2.0)
+        )
 
 import pyleucht.font
 import pyleucht.button

@@ -4,11 +4,12 @@ An animation is anything that can be drawn to the LED wall over time.
 
 import pyleucht as pl
 
+from collections.abc import Generator
 import math
 
 class Base:
-    def __init__(self):
-        pass
+    def __init__(self, bbox: pl.BBox = None):
+        self.bbox = bbox
 
     def start(self):
         '''Called when the animation starts'''
@@ -17,6 +18,14 @@ class Base:
     def stop(self):
         '''Called when the animation stops'''
         pass
+
+    def points(self, screen) -> Generator[pl.Point, None, None]:
+        if self.bbox:
+            for point in self.bbox.points():
+                yield point
+        else:
+            for point in screen.points():
+                yield point
 
     def update(self, screen: type[pl.screen.Base], dt: float):
         '''
@@ -29,12 +38,13 @@ class Base:
 
 
 class FillColor(Base):
-    def __init__(self, color: pl.RGB):
-        super().__init__()
+    def __init__(self, color: pl.RGB, *, bbox: pl.BBox = None):
+        super().__init__(bbox)
         self.color = color
 
     def update(self, screen: type[pl.screen.Base], dt: float):
-        screen.fill(self.color)
+        for point in self.points(screen):
+            screen.set(point, self.color)
 
 
 class VLine(Base):
@@ -49,31 +59,36 @@ class VLine(Base):
 
 
 class RainbowCycle(Base):
-    def __init__(self, speed: float = 1.0):
-        super().__init__()
+    def __init__(self, speed: float = 1.0, *, bbox: pl.BBox = None):
+        super().__init__(bbox)
         self.speed = speed
         self.position = 0.0
 
     def update(self, screen: type[pl.screen.Base], dt: float):
         self.position += self.speed * dt
-        for point in screen.points():
+        for point in self.points():
             hue = (self.position + (point.x + point.y) * 10) % 360
             screen.set(point, pl.RGB.from_hue(hue))
 
 
 class Kaleidoscope(Base):
-    def __init__(self, speed: float = 1.0):
-        super().__init__()
+    def __init__(self, speed: float = 1.0, *, bbox: pl.BBox = None):
+        super().__init__(bbox)
         self.speed = speed
         self.angle = 0.0
 
     def update(self, screen: type[pl.screen.Base], dt: float):
         self.angle += self.speed * dt
-        center_x = screen.width / 2
-        center_y = screen.height / 2
-        for point in screen.points():
-            dx = point.x - center_x
-            dy = point.y - center_y
+        if self.bbox:
+            center = self.bbox.center_f()
+        else:
+            center = (
+                float(screen.width) / 2.0,
+                float(screen.height) / 2.0,
+            )
+        for point in self.points(screen):
+            dx = float(point.x) - center[0]
+            dy = float(point.y) - center[1]
             distance = (dx**2 + dy**2) ** 0.5
             hue = (self.angle + distance * 10) % 360
             screen.set(point, pl.RGB.from_hue(hue))
@@ -92,7 +107,8 @@ class BreathingGlow(Base):
         r = int(self.color.r * brightness)
         g = int(self.color.g * brightness)
         b = int(self.color.b * brightness)
-        screen.fill(pl.RGB(r, g, b))
+        for point in self.points(screen):
+            screen.set(point, pl.RGB(r, g, b))
 
 
 class Text(Base):

@@ -6,7 +6,7 @@ see https://learn.adafruit.com/retro-gaming-with-raspberry-pi/adding-controls-ha
 
 ```
 python -m venv .venv
-.\.venv\Scripts\pip.exe install --upgrade pip
+.\.venv\Scripts\python.exe  -m pyleucht --debug
 .\.venv\Scripts\pip.exe install ".[debug]"
 $env:PYTHONPATH="src"
 .\.venv\Scripts\python.exe  -m pyleucht --debug

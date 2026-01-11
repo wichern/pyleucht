@@ -12,11 +12,11 @@ class App:
         self.buttons.callback = lambda id, pressed: self.post_event(pl.event.ButtonPressed(id) if pressed else pl.event.ButtonReleased(id))
         
         self.apps = {
-            "Tischtennis" : pl.state.TableTennis(self.buttons),
-            "Animationen" : pl.state.Animations(self.buttons),
+            "Tischtennis" : pl.state.TableTennis(self.screen, self.buttons),
+            "Animationen" : pl.state.Animations(self.screen, self.buttons),
         }
-        self.idle_state = pl.state.Idle(self.buttons)
-        self.selection_state = pl.state.ProgramSelection(self.buttons, list(self.apps.keys()))
+        self.idle_state = pl.state.Idle(self.screen, self.buttons)
+        self.selection_state = pl.state.ProgramSelection(self.screen, self.buttons, list(self.apps.keys()))
         self.state = self.idle_state
         self.state.on_enter()  # Initialize LED state for the initial state
 
@@ -35,7 +35,7 @@ class App:
                 idle_frames = 0
 
             # Update state and screen
-            self.state.update(self.screen, dt)
+            self.state.update(dt)
             self.screen.update()
 
             # Frame limiting
