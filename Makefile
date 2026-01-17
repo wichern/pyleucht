@@ -2,8 +2,12 @@ VENV := .venv
 PYTHON := $(VENV)/bin/python
 PIP := $(VENV)/bin/pip
 
-# .PHONY: linux_prepare
-# linux_prepare:
+# .PHONY: linux_prepare_rpi
+# linux_prepare_rpi:
+# 	sudo apt-get install -y swig
+
+# .PHONY: linux_prepare_demo
+# linux_prepare_demo:
 # 	sudo apt-get install -y libportaudio2
 
 $(VENV):
@@ -11,7 +15,7 @@ $(VENV):
 
 $(VENV)/.installed_rpi: $(VENV) pyproject.toml
 	$(PIP) install --upgrade pip
-	$(PIP) install ".[rpi]""
+	$(PIP) install ".[rpi]"
 	@touch $(VENV)/.installed_rpi
 
 $(VENV)/.installed_debug: $(VENV) pyproject.toml

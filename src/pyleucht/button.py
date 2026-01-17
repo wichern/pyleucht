@@ -32,53 +32,31 @@ class GPIOHandler(HandlerBase):
     Assumes 6 buttons and 6 LEDs connected to specified GPIO pins.
     '''
 
-    BOUNCE_TIME_MS = 50
-
     def __init__(self, gpio_push: list[int], gpio_led: list[int]):
         super().__init__()
 
+        self._gpio_available = False
         try:
-            import RPi.GPIO as GPIO
-            self._GPIO = GPIO
+            import gpiozero
+            self._gpio_available = True
         except Exception as e:
-            logging.warning("RPi.GPIO not available or unusable: %s", e)
-            return
+            logging.warning("gpiozero not available or unusable: %s", e)
 
-        self._gpio_available = True
         assert len(gpio_push) == 6 and len(gpio_led) == 6, "Expected 6 GPIO pins for buttons and LEDs"
         self._gpio_push = list(gpio_push)
         self._gpio_led = list(gpio_led)
 
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setwarnings(False)
-
-        # Setup buttons and LEDs
-        for i in range(6):
-            GPIO.setup(self._gpio_push[i], GPIO.IN, pull_up_down=GPIO.PUD_UP)
-            GPIO.setup(self._gpio_led[i], GPIO.OUT)
-            GPIO.output(self._gpio_led[i], GPIO.LOW)
-
-            GPIO.add_event_detect(
-                self._gpio_push[i],
-                GPIO.RISING,
-                callback=self._button_up_callback,
-                bouncetime=self.BOUNCE_TIME_MS,
-            )
-
-            GPIO.add_event_detect(
-                self._gpio_push[i],
-                GPIO.FALLING,
-                callback=self._button_down_callback,
-                bouncetime=self.BOUNCE_TIME_MS,
-            )
-
-    def _button_up_callback(self, channel):
-        button_id = self._gpio_push.index(channel)
-        self.callback(button_id, pressed=False)
-    
-    def _button_down_callback(self, channel):
-        button_id = self._gpio_push.index(channel)
-        self.callback(button_id, pressed=True)
+        self._buttons = []
+        self._leds = []
+        if self._gpio_available:
+            # Setup buttons and LEDs
+            for i in range(6):
+                button_id = self._gpio_push[i]
+                button = gpiozero.Button(button_id)
+                button.when_pressed = lambda bid=button_id: self.callback(bid, pressed=True)
+                button.when_released = lambda bid=button_id: self.callback(bid, pressed=False)
+                self._buttons.append(button)
+                self._leds.append(gpiozero.LED(self._gpio_led[i]))
 
 class DebugHandler(HandlerBase):
     """
