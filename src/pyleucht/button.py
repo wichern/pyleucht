@@ -21,7 +21,7 @@ class HandlerBase:
 
     def get_led_state(self, button_id: int) -> bool:
         return self._states[button_id]
-    
+
     def set_all_leds(self, state: bool):
         for i in range(6):
             self.set_led_state(i, state)

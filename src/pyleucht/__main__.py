@@ -18,8 +18,8 @@ def main():
         ui = pl.screen.Debug(SCREEN_WIDTH, SCREEN_HEIGHT, buttons=buttons)
     else:
         buttons = pl.button.GPIOHandler(
-            gpio_push=[29, 31, 32, 33, 35, 36],
-            gpio_led=[7, 11, 12, 13, 15, 16],
+            gpio_push=["GPIO5", "GPIO6", "GPIO12", "GPIO13", "GPIO19", "GPIO16"],
+            gpio_led=["GPIO4", "GPIO17", "GPIO18", "GPIO27", "GPIO22", "GPIO23"],
         )
         ui = pl.screen.WS2801(SCREEN_WIDTH, SCREEN_HEIGHT, bus=args.spi_bus, device=args.spi_device, speed_hz=args.spi_speed)
 

@@ -67,13 +67,13 @@ class WS2801(Base):
             if y % 2 == 0:
                 # even row: left to right
                 for x in range(self.width):
-                    r, g, b = self.pixels[y][x]
-                    data.extend((r & 0xFF, g & 0xFF, b & 0xFF))
+                    p = self.pixels[y][x]
+                    data.extend((p.r & 0xFF, p.g & 0xFF, p.b & 0xFF))
             else:
                 # odd row: right to left
                 for x in reversed(range(self.width)):
-                    r, g, b = self.pixels[y][x]
-                    data.extend((r & 0xFF, g & 0xFF, b & 0xFF))
+                    p = self.pixels[y][x]
+                    data.extend((p.r & 0xFF, p.g & 0xFF, p.b & 0xFF))
 
         self._spi.xfer2(list(data))
         time.sleep(0.002)  # Latch delay
