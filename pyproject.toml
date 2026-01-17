@@ -13,5 +13,6 @@ debug = [
 ]
 rpi = [
     "spidev~=3.8",
-    "gpiozero",
+    "gpiozero~=2.0.1",
+    "lgpio~=0.2.2"
 ]
