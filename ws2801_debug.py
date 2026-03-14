@@ -5,8 +5,8 @@ import spidev
 import argparse
 import time
 import sys
-import board
-import adafruit_ws2801
+#import board
+#import adafruit_ws2801
 
 def print_spi_info():
     for bus in range(2):  # typically 0 and 1 on Raspberry Pi

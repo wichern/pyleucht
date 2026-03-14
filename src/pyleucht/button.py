@@ -52,11 +52,14 @@ class GPIOHandler(HandlerBase):
             # Setup buttons and LEDs
             for i in range(6):
                 button_id = self._gpio_push[i]
-                button = gpiozero.Button(button_id)
+                button = gpiozero.Button(button_id, bounce_time=0.05, pull_up=True)
                 button.when_pressed = lambda bid=button_id: self.callback(bid, pressed=True)
                 button.when_released = lambda bid=button_id: self.callback(bid, pressed=False)
                 self._buttons.append(button)
                 self._leds.append(gpiozero.LED(self._gpio_led[i]))
+
+    def get_gpio(self, index):
+        return self._gpio_push[index]
 
 class DebugHandler(HandlerBase):
     """

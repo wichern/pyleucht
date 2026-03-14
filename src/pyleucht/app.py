@@ -10,7 +10,7 @@ class App:
         self.event_queue = queue.Queue()
         self.buttons = buttons
         self.buttons.callback = lambda id, pressed: self.post_event(pl.event.ButtonPressed(id) if pressed else pl.event.ButtonReleased(id))
-        
+
         self.apps = {
             "Tischtennis" : pl.state.TableTennis(self.screen, self.buttons),
             "Animationen" : pl.state.Animations(self.screen, self.buttons),
@@ -31,6 +31,7 @@ class App:
                 event = self.event_queue.get()
                 action, selection = self.state.handle_event(event)
                 if action != pl.state.UserAction.NONE:
+                    print(event)
                     self._handle_user_action(action, selection)
                 idle_frames = 0
 
@@ -68,7 +69,7 @@ class App:
 
         if action == pl.state.UserAction.SELECT:
             self._change_state(self.apps[selection])
-        
+
         if action == pl.state.UserAction.WAKEUP:
             # Wakeup is called when any button is pressed in idle state
             self._change_state(self.selection_state)

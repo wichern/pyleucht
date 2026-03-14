@@ -63,7 +63,7 @@ class WS2801(Base):
         data = bytearray()
 
         # Extend data and consider that the strip is wired in serpentine order
-        for y in range(self.height):
+        for y in reversed(range(self.height)):
             if y % 2 == 0:
                 # even row: left to right
                 for x in range(self.width):
