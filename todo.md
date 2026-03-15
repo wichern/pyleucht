@@ -2,14 +2,14 @@
 
 [ ]
 
-Please create a couple of new animation classes.
+Please create a couple of new animation classes (subclasses of Base).
 
-1. Bitmap
-   A class that loads an image and displays it
-2. Sprite(?)
-   A class that shows an animation based on a list of Bitmaps and a given speed to move between bitmaps
-3. NPC
-   A class that has a state and multiple animations (Sprites)
+1. Sprite
+   A class that loads an image (bmp or png, what makes more sense?) and displays it.
+2. SpriteAnimation
+   A class that shows an animation based on a list of sprites and a given speed to move between sprites.
+3. SpriteCharacter
+   A class that has a state and multiple SpriteAnimation
 
 
 

@@ -13,7 +13,7 @@ class App:
 
         self.apps = {
             "Tischtennis" : pl.state.TableTennis(self.screen, self.buttons),
-            "Piggy" : pl.state.PiggyGame(self.screen, self.buttons),
+            "Piggy" : pl.piggy.PiggyGame(self.screen, self.buttons),
             "Animationen" : pl.state.Animations(self.screen, self.buttons),
         }
         self.idle_state = pl.state.Idle(self.screen, self.buttons)
@@ -32,7 +32,6 @@ class App:
                 event = self.event_queue.get()
                 action, selection = self.state.handle_event(event)
                 if action != pl.state.UserAction.NONE:
-                    print(event)
                     self._handle_user_action(action, selection)
                 idle_frames = 0
 

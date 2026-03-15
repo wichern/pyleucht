@@ -5,7 +5,9 @@ authors = [
     { name = "Paul Wichern" }
 ]
 
-dependencies = []
+dependencies = [
+    "Pillow",
+]
 
 [project.optional-dependencies]
 debug = [

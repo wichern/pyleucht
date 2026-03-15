@@ -91,4 +91,5 @@ import pyleucht.animation
 import pyleucht.event
 import pyleucht.state
 import pyleucht.app
+import pyleucht.piggy
 

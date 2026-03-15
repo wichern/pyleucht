@@ -1,6 +1,12 @@
 VENV := .venv
+
+ifeq ($(OS),Windows_NT)
+PYTHON := $(VENV)/Scripts/python.exe
+PIP := $(VENV)/Scripts/pip.exe
+else
 PYTHON := $(VENV)/bin/python
 PIP := $(VENV)/bin/pip
+endif
 
 .PHONY: linux_prepare_rpi
 linux_prepare_rpi:
@@ -14,12 +20,12 @@ $(VENV):
 	python -m venv $(VENV)
 
 $(VENV)/.installed_rpi: $(VENV) pyproject.toml
-	$(PIP) install --upgrade pip
+	$(PYTHON) -m pip --upgrade pip
 	$(PIP) install ".[rpi]"
 	@touch $(VENV)/.installed_rpi
 
 $(VENV)/.installed_debug: $(VENV) pyproject.toml
-	$(PIP) install --upgrade pip
+	$(PYTHON) -m pip install --upgrade pip
 	$(PIP) install ".[debug]"
 	@touch $(VENV)/.installed_debug
 

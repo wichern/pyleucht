@@ -6,6 +6,7 @@ import pyleucht as pl
 
 from collections.abc import Generator
 import math
+from PIL import Image
 
 class Base:
     def __init__(self, bbox: pl.BBox = None):
@@ -189,5 +190,73 @@ class PiggyLives(Base):
             for y in range(4):
                 screen.set(pl.Point(screen.width - 4 + x, y), color)
 
-# TODO: sprite class
+
+class Sprite(Base):
+    def __init__(self, image_path: str, pos: pl.Point = pl.Point(0, 0)):
+        self.image = Image.open(image_path).convert('RGBA')
+        super().__init__(pl.BBox(pl.Point(pos.x, pos.y), pl.Point(pos.x + self.image.width - 1, pos.y + self.image.height - 1)))
+        self.pos = pos
+
+    def update(self, screen: type[pl.screen.Base], dt: float):
+        for x in range(self.image.width):
+            for y in range(self.image.height):
+                r, g, b, a = self.image.getpixel((x, y))
+                if a == 255:
+                    screen.set(pl.Point(int(self.pos.x + x), int(self.pos.y + y)), pl.RGB(r, g, b))
+
+
+class SpriteAnimation(Base):
+    def __init__(self, sprites: list[Sprite], speed: float, pos: pl.Point = pl.Point(0, 0)):
+        """
+        :param sprites: List of Sprite objects, all must have the same dimensions.
+        :param speed: Animation speed in frames per second.
+        :param pos: Top-left position where the animation is drawn.
+        """
+        if not sprites:
+            raise ValueError("At least one sprite is required")
+        # Assume all sprites have the same dimensions
+        width = sprites[0].image.width
+        height = sprites[0].image.height
+        for sprite in sprites[1:]:
+            if sprite.image.width != width or sprite.image.height != height:
+                raise ValueError("All sprites must have the same dimensions")
+        super().__init__(pl.BBox(pl.Point(pos.x, pos.y), pl.Point(pos.x + width - 1, pos.y + height - 1)))
+        self.sprites = sprites
+        self.speed = speed  # frames per second
+        self.pos = pos
+        self.current_frame = 0
+        self.time_since_last = 0.0
+
+    def update(self, screen: type[pl.screen.Base], dt: float):
+        self.time_since_last += dt
+        if self.time_since_last >= 1.0 / self.speed:
+            self.current_frame = (self.current_frame + 1) % len(self.sprites)
+            self.time_since_last = 0.0
+
+        sprite = self.sprites[self.current_frame]
+        for x in range(sprite.image.width):
+            for y in range(sprite.image.height):
+                r, g, b, a = sprite.image.getpixel((x, y))
+                if a == 255:
+                    screen.set(pl.Point(int(self.pos.x + x), int(self.pos.y + y)), pl.RGB(r, g, b))
+
+
+class SpriteCharacter(Base):
+    def __init__(self, animations: dict[str, SpriteAnimation], initial_state: str, pos: pl.Point = pl.Point(0, 0), velocity: pl.Point = pl.Point(0, 0)):
+        super().__init__()
+        self.animations = animations
+        self.state = initial_state
+        self.pos = pos
+        self.velocity = velocity
+
+    def set_state(self, state: str):
+        self.state = state
+
+    def update(self, screen: type[pl.screen.Base], dt: float):
+        self.pos = pl.Point(math.floor(self.pos.x + self.velocity.x * dt), math.floor(self.pos.y + self.velocity.y * dt))
+        if self.state in self.animations:
+            anim = self.animations[self.state]
+            anim.pos.x = int(self.pos.x)
+            anim.pos.y = int(self.pos.y)
+            anim.update(screen, dt)
 
