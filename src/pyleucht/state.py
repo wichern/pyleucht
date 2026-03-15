@@ -55,7 +55,6 @@ class Idle(Base):
         super().__init__(screen, buttons)
 
     def on_enter(self):
-        print("Idle::on_enter")
         super().on_enter()
         self.animations.append(pl.animation.Kaleidoscope(speed=-100.0))
         self.idle = 0
@@ -111,7 +110,6 @@ class TableTennis(Base):
 
     def on_enter(self):
         super().on_enter()
-        print("TableTennis::on_enter")
         self.buttons.set_led_state(self.BUTTON_PLAYER0_UP, True)
         self.buttons.set_led_state(self.BUTTON_PLAYER1_UP, True)
         self.buttons.set_led_state(self.BUTTON_BACK, True)
@@ -124,16 +122,16 @@ class TableTennis(Base):
         self._update_scores()
 
     def on_button_pressed(self, event: pl.event.ButtonPressed):
-        if event.button_id == self.buttons.get_gpio(self.BUTTON_PLAYER0_UP) and not self.game_over:
+        if event.button_id == self.BUTTON_PLAYER0_UP and not self.game_over:
             self.scores[0] += 1
-        if event.button_id == self.buttons.get_gpio(self.BUTTON_PLAYER0_DOWN) and not self.game_over:
+        if event.button_id == self.BUTTON_PLAYER0_DOWN and not self.game_over:
             self.scores[0] = max(0, self.scores[0] - 1)
-        if event.button_id == self.buttons.get_gpio(self.BUTTON_PLAYER1_UP) and not self.game_over:
+        if event.button_id == self.BUTTON_PLAYER1_UP and not self.game_over:
             self.scores[1] += 1
-        if event.button_id == self.buttons.get_gpio(self.BUTTON_PLAYER1_DOWN) and not self.game_over:
+        if event.button_id == self.BUTTON_PLAYER1_DOWN and not self.game_over:
             self.scores[1] = max(0, self.scores[1] - 1)
 
-        if event.button_id == self.buttons.get_gpio(self.BUTTON_BACK):
+        if event.button_id == self.BUTTON_BACK:
             if self.scores[0] == 0 and self.scores[1] == 0:
                 return (UserAction.BACK, None)
             for player in range(2):
@@ -190,6 +188,8 @@ class Animations(Base):
         super().on_enter()
 
     def on_button_pressed(self, event: pl.event.ButtonPressed):
+        if event.button_id == self.BUTTON_BACK:
+            return (UserAction.BACK, None)
         return (UserAction.NONE, None)
 
 
@@ -206,7 +206,6 @@ class ProgramSelection(Base):
 
     def on_enter(self):
         super().on_enter()
-        print("ProgramSelection::on_enter")
         self.buttons.set_led_state(self.BUTTON_UP, True)
         self.buttons.set_led_state(self.BUTTON_DOWN, True)
         self.buttons.set_led_state(self.BUTTON_SELECT, True)
@@ -217,24 +216,63 @@ class ProgramSelection(Base):
         self.animations.append(self.label)
 
     def on_button_pressed(self, event: pl.event.ButtonPressed):
-        print("ProgramSelection::on_button_pressed")
-        print(event)
-        print("compare with:")
-        print(self.BUTTON_UP)
-        #print(self.buttons.gou)
-        if event.button_id == self.buttons.get_gpio(self.BUTTON_UP):
+        if event.button_id == self.BUTTON_UP:
             self.selected = (self.selected - 1) % len(self.app_names)
             self._update_label()
-        elif event.button_id == self.buttons.get_gpio(self.BUTTON_DOWN):
+        elif event.button_id == self.BUTTON_DOWN:
             self.selected = (self.selected + 1) % len(self.app_names)
             self._update_label()
-        elif event.button_id == self.buttons.get_gpio(self.BUTTON_SELECT):
+        elif event.button_id == self.BUTTON_SELECT:
             return (UserAction.SELECT, self.app_names[self.selected])
-        elif event.button_id == self.buttons.get_gpio(self.BUTTON_BACK):
+        elif event.button_id == self.BUTTON_BACK:
             return (UserAction.BACK, None)
         return (UserAction.NONE, None)
 
     def _update_label(self):
         self.label = pl.animation.Text(text=self.app_names[self.selected], pos=pl.Point(0, 3), color=pl.RGB(255, 255, 255), initial_wait=0.5, speed=8.0)
         self.animations[1] = self.label
+
+class PiggyGame(Base):
+    BUTTON_START = pl.button.BUTTON_TOP_MIDDLE
+    BUTTON_BACK = pl.button.BUTTON_BOTTOM_MIDDLE
+    BUTTON_JUMP = pl.button.BUTTON_TOP_RIGHT
+
+    COLOR_TIE = pl.RGB(255, 255, 255)
+    COLOR_AHEAD = pl.RGB(0, 255, 0)
+    COLOR_BEHIND = pl.RGB(255, 0, 0)
+
+    LABEL_OFFSET_Y = 3
+
+    def __init__(self, screen: type[pl.screen.Base], buttons: type[pl.button.HandlerBase]):
+        super().__init__(screen, buttons)
+
+        # Blue sky
+        skybox = pl.BBox(pl.Point(0, 0), pl.Point(screen.width, screen.height - 1))
+        self.animations.append(pl.animation.FillColor(pl.RGB(160, 160, 255), bbox=skybox))
+
+        # Green lawn
+        self.animations.append(pl.animation.HLine(pl.RGB(80, 200, 80), screen.height - 1))
+
+        self.lives_animation = pl.animation.PiggyLives()
+        self.animations.append(self.lives_animation)
+    
+    def on_enter(self):
+        super().on_enter()
+        self.buttons.set_led_state(self.BUTTON_START, True)
+        self.buttons.set_led_state(self.BUTTON_BACK, True)
+        self.buttons.set_led_state(self.BUTTON_JUMP, True)
+
+        self.lives = 4
+
+    def on_button_pressed(self, event: pl.event.ButtonPressed):
+        if event.button_id == self.BUTTON_JUMP:
+            pass
+
+        if event.button_id == self.BUTTON_BACK:
+            return (UserAction.BACK, None)
+
+        return (UserAction.NONE, None)
+
+    def on_frame(self):
+        pass
 

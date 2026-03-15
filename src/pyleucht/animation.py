@@ -58,6 +58,17 @@ class VLine(Base):
             screen.set(pl.Point(self.x, y), self.color)
 
 
+class HLine(Base):
+    def __init__(self, color: pl.RGB, y: int):
+        super().__init__()
+        self.color = color
+        self.y = y
+
+    def update(self, screen: type[pl.screen.Base], dt: float):
+        for x in range(screen.width):
+            screen.set(pl.Point(x, self.y), self.color)
+
+
 class RainbowCycle(Base):
     def __init__(self, speed: float = 1.0, *, bbox: pl.BBox = None):
         super().__init__(bbox)
@@ -157,3 +168,26 @@ class Text(Base):
         for point in pl.Point.points(char.width, pl.font.HEIGHT):
             if char.is_set(point):
                 screen.set(pos + point, self.color)
+
+
+class PiggyLives(Base):
+    def __init__(self):
+        super().__init__()
+        self.lives = 4
+
+    def update(self, screen: type[pl.screen.Base], dt: float):
+        color = pl.RGB(0, 127, 0)
+        if self.lives == 3:
+            color = pl.RGB(127, 255, 127)
+        elif self.lives == 2:
+            color = pl.RGB(255, 255, 0)
+        if self.lives == 1:
+            color = pl.RGB(255, 0, 0)
+        # TODO: 0 lives is different
+    
+        for x in range(self.lives):
+            for y in range(4):
+                screen.set(pl.Point(screen.width - 4 + x, y), color)
+
+# TODO: sprite class
+

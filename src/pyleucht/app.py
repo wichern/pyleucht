@@ -13,6 +13,7 @@ class App:
 
         self.apps = {
             "Tischtennis" : pl.state.TableTennis(self.screen, self.buttons),
+            "Piggy" : pl.state.PiggyGame(self.screen, self.buttons),
             "Animationen" : pl.state.Animations(self.screen, self.buttons),
         }
         self.idle_state = pl.state.Idle(self.screen, self.buttons)
@@ -48,7 +49,7 @@ class App:
                 # Frame overrun; skip sleeping
                 next_frame_time = time.perf_counter()
 
-            if idle_frames > self.MAX_IDLE_FRAMES:
+            if idle_frames > self.MAX_IDLE_FRAMES and self.state == self.selection_state:
                 self._change_state(self.idle_state)
 
             idle_frames += 1
